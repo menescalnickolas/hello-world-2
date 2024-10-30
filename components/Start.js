@@ -24,8 +24,6 @@ const Start = ({ navigation }) => {
               onChangeText={setName}
               placeholder='Your Name'
             />
-            {Platform.OS === 'android' ? <KeyboardAvoidingView behavior="height" /> : null}
-            {Platform.OS === "ios" ? <KeyboardAvoidingView behavior="padding" /> : null}
           </View>
 
           <Text style={styles.chooseColorText}>Choose a background color:</Text>
