@@ -1,4 +1,4 @@
-import { StyleSheet, View, Text, Button, TextInput, ImageBackground, TouchableOpacity, Image } from 'react-native';
+import { StyleSheet, View, Text, Button, TextInput, ImageBackground, TouchableOpacity, Image, Platform, KeyboardAvoidingView } from 'react-native';
 import { useState } from 'react';
 
 const Start = ({ navigation }) => {
@@ -14,8 +14,8 @@ const Start = ({ navigation }) => {
           <Text style={styles.title}>CHIT CHAT</Text>
         </View>
 
-        
-        <View style={styles.mainContainer}> 
+
+        <View style={styles.mainContainer}>
           <View style={styles.inputContainer}>
             <Image source={require('../img/icon.png')} style={styles.icon} />
             <TextInput
@@ -24,7 +24,10 @@ const Start = ({ navigation }) => {
               onChangeText={setName}
               placeholder='Your Name'
             />
+            {Platform.OS === 'android' ? <KeyboardAvoidingView behavior="height" /> : null}
+            {Platform.OS === "ios" ? <KeyboardAvoidingView behavior="padding" /> : null}
           </View>
+
           <Text style={styles.chooseColorText}>Choose a background color:</Text>
           <View style={styles.colorOptionsContainer}>
             {['floralwhite', 'pink', 'salmon', 'lavender', 'plum'].map((color) => (
@@ -142,7 +145,7 @@ const styles = StyleSheet.create({
   },
 
   selectedColor: {
-    borderWidth: 3, 
+    borderWidth: 3,
     borderColor: 'gray'
   },
 
