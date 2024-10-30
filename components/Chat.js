@@ -1,6 +1,6 @@
 import { StyleSheet, View, Text, KeyboardAvoidingView, Platform  } from 'react-native';
 import { useEffect, useState } from 'react';
-import { GiftedChat, InputToolbar } from "react-native-gifted-chat";
+import { GiftedChat, InputToolbar, Bubble } from "react-native-gifted-chat";
 
 const Chat = ({ route, navigation }) => {
 
@@ -9,6 +9,28 @@ const Chat = ({ route, navigation }) => {
 
   const onSend = (newMessages) => {
     setMessages(previousMessages => GiftedChat.append(previousMessages, newMessages))
+  }
+
+  const renderBubble = (props) => {
+    return <Bubble
+      {...props}
+      wrapperStyle={{
+        right: {
+          backgroundColor: "royalblue",
+          paddingVertical: 8, 
+          paddingHorizontal: 10,
+          maxWidth: '100%', 
+          minWidth: '10%',
+        },
+        left: {
+          backgroundColor: "snow",
+          paddingVertical: 8,
+          paddingHorizontal: 10,
+          maxWidth: '100%',
+          minWidth: '10%',
+        }
+      }}
+    />
   }
 
   useEffect(() => {
@@ -29,7 +51,7 @@ const Chat = ({ route, navigation }) => {
       },
       {
         _id: 2,
-        text: 'This is a system message',
+        text: 'You have entered the chat.',
         createdAt: new Date(),
         system: true,
       },
@@ -38,27 +60,29 @@ const Chat = ({ route, navigation }) => {
 
  return (
   <View style={[styles.container, { backgroundColor: color || 'white' }]}> 
-      
-      <View style={styles.innerView}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={{ flex: 1 }}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 80 : 0} 
+      >
         <GiftedChat
-      messages={messages}
-      onSend={messages => onSend(messages)}
-      user={{
-        _id: 1
-      }}
-    />
-    { Platform.OS === 'android' ? <KeyboardAvoidingView behavior="height" /> : null }
-    {Platform.OS === "ios"?<KeyboardAvoidingView behavior="padding" />: null}
-      </View>
-   </View>
+          messages={messages}
+          renderBubble={renderBubble}
+          onSend={messages => onSend(messages)}
+          user={{
+            _id: 1
+          }}
+          forceGetKeyboardHeight={Platform.OS === 'ios'} 
+          bottomOffset={Platform.OS === 'ios' ? 288 : 0} 
+        />
+      </KeyboardAvoidingView>
+    </View>
  );
 }
 
 const styles = StyleSheet.create({
  container: {
    flex: 1,
-   justifyContent: 'center',
-   alignItems: 'center'
  }, 
 
  innerView: {
