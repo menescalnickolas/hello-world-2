@@ -7,10 +7,13 @@ const Chat = ({ route, navigation }) => {
   const { name, color } = route.params;
   const [messages, setMessages] = useState([]);
 
+  // To keep old messages on screen
   const onSend = (newMessages) => {
     setMessages(previousMessages => GiftedChat.append(previousMessages, newMessages))
   }
 
+
+  // To customize the message bubbles
   const renderBubble = (props) => {
     return <Bubble
       {...props}
@@ -33,10 +36,13 @@ const Chat = ({ route, navigation }) => {
     />
   }
 
+  // To have the user's name at the top of the Chat screen
   useEffect(() => {
     navigation.setOptions({ title: name });
   }, []);
 
+
+// id: 2 is for system messages
   useEffect(() => {
     setMessages([
       {
@@ -60,22 +66,16 @@ const Chat = ({ route, navigation }) => {
 
  return (
   <View style={[styles.container, { backgroundColor: color || 'white' }]}> 
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        style={{ flex: 1 }}
-        keyboardVerticalOffset={Platform.OS === "ios" ? 80 : 0} 
-      >
+      
         <GiftedChat
           messages={messages}
           renderBubble={renderBubble}
           onSend={messages => onSend(messages)}
           user={{
             _id: 1
-          }}
-          forceGetKeyboardHeight={Platform.OS === 'ios'} 
-          bottomOffset={Platform.OS === 'ios' ? 288 : 0} 
-        />
-      </KeyboardAvoidingView>
+          }} 
+        /> 
+        {Platform.OS === "ios"?<KeyboardAvoidingView behavior="padding" />: null}
     </View>
  );
 }
@@ -84,10 +84,6 @@ const styles = StyleSheet.create({
  container: {
    flex: 1,
  }, 
-
- innerView: {
-  flex: 1,
- }
 });
 
 export default Chat;
