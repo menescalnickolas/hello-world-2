@@ -1,60 +1,63 @@
-import { StyleSheet, View, Text, Button, TextInput, ImageBackground, TouchableOpacity, Image, Platform, KeyboardAvoidingView } from 'react-native';
+
+import { StyleSheet, View, Text, Button, TextInput, ImageBackground, TouchableOpacity, Image, Platform, KeyboardAvoidingView, ScrollView } from 'react-native';
 import { useState } from 'react';
 
 const Start = ({ navigation }) => {
-
   const [name, setName] = useState('');
   const [colorOptions, setColorOptions] = useState('');
 
   return (
-
-    <View style={styles.container}>
+    <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === "android" ? "padding" : "height"}>
       <ImageBackground source={require("../img/Background.png")} style={styles.backgroundImage}>
-        <View>
+        <ScrollView contentContainerStyle={styles.scrollViewContent}>
           <Text style={styles.title}>CHIT CHAT</Text>
-        </View>
 
-
-        <View style={styles.mainContainer}>
-          <View style={styles.inputContainer}>
-            <Image source={require('../img/icon.png')} style={styles.icon} />
-            <TextInput
-              style={styles.textInput} // Make sure to use lowercase 'textInput' as defined in your styles
-              value={name}
-              onChangeText={setName}
-              placeholder='Your Name'
-            />
-          </View>
-
-          <Text style={styles.chooseColorText}>Choose a background color:</Text>
-          <View style={styles.colorOptionsContainer}>
-            {['floralwhite', 'pink', 'salmon', 'lavender', 'plum'].map((color) => (
-              <TouchableOpacity
-                key={color}
-                style={[
-                  styles.colorOption,
-                  { backgroundColor: color },
-                  color === colorOptions ? styles.selectedColor : null // Add selected styles
-                ]}
-                onPress={() => setColorOptions(color)}
+          <View style={styles.mainContainer}>
+            <View style={styles.inputContainer}>
+              <Image source={require('../img/icon.png')} style={styles.icon} />
+              <TextInput
+                style={styles.textInput}
+                value={name}
+                onChangeText={setName}
+                placeholder='Your Name'
               />
-            ))}
-          </View>
+            </View>
 
-          <TouchableOpacity
-            style={styles.button}
-            onPress={() => navigation.navigate('Chat', { name: name, color: colorOptions })}>
-            <Text style={styles.buttonText}>Start Chatting</Text>
-          </TouchableOpacity>
-        </View>
+            <Text style={styles.chooseColorText}>Choose a background color:</Text>
+            <View style={styles.colorOptionsContainer}>
+              {['floralwhite', 'pink', 'salmon', 'lavender', 'plum'].map((color) => (
+                <TouchableOpacity
+                  key={color}
+                  style={[
+                    styles.colorOption,
+                    { backgroundColor: color },
+                    color === colorOptions ? styles.selectedColor : null
+                  ]}
+                  onPress={() => setColorOptions(color)}
+                />
+              ))}
+            </View>
+
+            <TouchableOpacity
+              style={styles.button}
+              onPress={() => navigation.navigate('Chat', { name: name, color: colorOptions })}>
+              <Text style={styles.buttonText}>Start Chatting</Text>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
       </ImageBackground>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    justifyContent: 'center',
+  },
+
+  scrollViewContent: {
+    flexGrow: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -71,7 +74,7 @@ const styles = StyleSheet.create({
 
   textInput: {
     flex: 1,
-    paddingLeft: 10, // Add spacing between icon and input text
+    paddingLeft: 10,
   },
 
   title: {
@@ -91,31 +94,28 @@ const styles = StyleSheet.create({
   },
 
   mainContainer: {
-    position: 'absolute',
-    bottom: 100, // Position it near the bottom
     width: '88%',
-    height: '44%',
+    paddingVertical: 20,
     alignItems: 'center',
     backgroundColor: 'white',
     justifyContent: 'space-around',
-    alignSelf: 'center', // Center horizontally
-    paddingVertical: 20, // Optional: adjust padding as desired
+    alignSelf: 'center',
   },
 
   chooseColorText: {
     fontSize: 15,
     alignSelf: 'flex-start',
-    marginLeft: '6%',
-
+    marginLeft: '3%',
+    padding: 15
   },
 
   button: {
     width: '88%',
     height: 50,
-    backgroundColor: 'gray', // Customize color
+    backgroundColor: 'gray',
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 5, // Optional: adds rounded corners
+    borderRadius: 5,
   },
 
   buttonText: {
@@ -139,14 +139,14 @@ const styles = StyleSheet.create({
   colorOption: {
     width: 50,
     height: 50,
-    borderRadius: 25
+    borderRadius: 25,
+    marginBottom: 15
   },
 
   selectedColor: {
     borderWidth: 3,
     borderColor: 'gray'
   },
-
 });
 
 export default Start;
