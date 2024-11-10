@@ -1,10 +1,24 @@
 
-import { StyleSheet, View, Text, Button, TextInput, ImageBackground, TouchableOpacity, Image, Platform, KeyboardAvoidingView, ScrollView } from 'react-native';
+import { StyleSheet, View, Text, Button, TextInput, ImageBackground, TouchableOpacity, Image, Platform, KeyboardAvoidingView, ScrollView, Alert } from 'react-native';
 import { useState } from 'react';
+import { getAuth, signInAnonymously } from "firebase/auth";
 
 const Start = ({ navigation }) => {
   const [name, setName] = useState('');
   const [colorOptions, setColorOptions] = useState('');
+
+  const auth = getAuth();
+
+  const signInUser = () => {
+    signInAnonymously(auth)
+      .then(result => {
+        navigation.navigate("Chat", {userID: result.user.uid, name: name, color: colorOptions });
+        Alert.alert("Signed in Successfully!");
+      })
+      .catch((error) => {
+        Alert.alert("Unable to sign in, try later again.");
+      })
+  }
 
   return (
     <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === "android" ? "padding" : "height"}>
@@ -40,7 +54,9 @@ const Start = ({ navigation }) => {
 
             <TouchableOpacity
               style={styles.button}
-              onPress={() => navigation.navigate('Chat', { name: name, color: colorOptions })}>
+              // onPress={() => navigation.navigate('Chat', { name: name, color: colorOptions })}
+              onPress={signInUser}
+              >
               <Text style={styles.buttonText}>Start Chatting</Text>
             </TouchableOpacity>
           </View>

@@ -1,17 +1,26 @@
 import { StyleSheet, View, Text, KeyboardAvoidingView, Platform  } from 'react-native';
 import { useEffect, useState } from 'react';
 import { GiftedChat, InputToolbar, Bubble } from "react-native-gifted-chat";
+import { collection, getDocs, addDoc, onSnapshot, query, where, orderBy } from "firebase/firestore";
 
 const Chat = ({ route, navigation }) => {
 
-  const { name, color } = route.params;
+  const { db, name = "User", color = "white", userID = null } = route?.params || {};
   const [messages, setMessages] = useState([]);
+  
 
   // To keep old messages on screen
-  const onSend = (newMessages) => {
-    setMessages(previousMessages => GiftedChat.append(previousMessages, newMessages))
-  }
-
+  const onSend = async (newMessages = []) => {
+    try {
+      await addDoc(collection(db, "messages"), {
+        ...newMessages[0],
+        createdAt: new Date(),
+      });
+      console.log("Message sent:", newMessages[0]); // Log to check if message is saved
+    } catch (error) {
+      console.error("Error sending message:", error);
+    }
+  };
 
   // To customize the message bubbles
   const renderBubble = (props) => {
@@ -38,31 +47,30 @@ const Chat = ({ route, navigation }) => {
 
   // To have the user's name at the top of the Chat screen
   useEffect(() => {
-    navigation.setOptions({ title: name });
-  }, []);
+    if (navigation?.setOptions && name) {
+      navigation.setOptions({ title: name });
+    }
+  }, [navigation, name]);
 
 
 // id: 2 is for system messages
   useEffect(() => {
-    setMessages([
-      {
-        _id: 1,
-        text: "Hello developer",
-        createdAt: new Date(),
-        user: {
-          _id: 2,
-          name: "React Native",
-          avatar: "https://placeimg.com/140/140/any",
-        },
-      },
-      {
-        _id: 2,
-        text: 'You have entered the chat.',
-        createdAt: new Date(),
-        system: true,
-      },
-    ]);
-  }, []);
+    navigation.setOptions({ title: name });
+    const q = query(collection(db, "messages"), where("uid", "==", userID), orderBy("createdAt", "desc"));
+    const unsubChat = onSnapshot(q, (documentsSnapshot) => {
+      const newMessages = documentsSnapshot.docs.map(doc => ({
+        _id: doc.id,
+        ...doc.data(),
+        createdAt: doc.data().createdAt.toDate(),
+      }));
+      setMessages(newMessages);
+    });
+
+    // Clean up code
+    return () => {
+      if (unsubChat) unsubChat();
+    }
+  }, [userID]);
 
  return (
   <View style={[styles.container, { backgroundColor: color || 'white' }]}> 
@@ -72,7 +80,8 @@ const Chat = ({ route, navigation }) => {
           renderBubble={renderBubble}
           onSend={messages => onSend(messages)}
           user={{
-            _id: 1
+            _id: userID,
+            name: name,
           }} 
         /> 
         {Platform.OS === "ios"?<KeyboardAvoidingView behavior="padding" />: null}
