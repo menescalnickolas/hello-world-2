@@ -56,7 +56,7 @@ const Chat = ({ route, navigation }) => {
 // id: 2 is for system messages
   useEffect(() => {
     navigation.setOptions({ title: name });
-    const q = query(collection(db, "messages"), where("uid", "==", userID), orderBy("createdAt", "desc"));
+    const q = query(collection(db, "messages"), orderBy("createdAt", "desc"));
     const unsubChat = onSnapshot(q, (documentsSnapshot) => {
       const newMessages = documentsSnapshot.docs.map(doc => ({
         _id: doc.id,
