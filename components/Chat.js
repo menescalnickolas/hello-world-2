@@ -3,9 +3,9 @@ import { useEffect, useState } from 'react';
 import { GiftedChat, InputToolbar, Bubble } from "react-native-gifted-chat";
 import { collection, getDocs, addDoc, onSnapshot, query, where, orderBy } from "firebase/firestore";
 
-const Chat = ({ route, navigation, isConnected }) => {
+const Chat = ({ route, navigation, isConnected, db }) => {
 
-  const { db, storage, name = "User", color = "white", userID = null } = route?.params || {};
+  const { name = "User", color = "white", userID = null } = route?.params || {};
   const [messages, setMessages] = useState([]);
 
 
@@ -99,7 +99,6 @@ const Chat = ({ route, navigation, isConnected }) => {
   }, [navigation, name]);
 
 
-  // id: 2 is for system messages
   useEffect(() => {
     navigation.setOptions({ title: name });
     const q = query(collection(db, "messages"), orderBy("createdAt", "desc"));
