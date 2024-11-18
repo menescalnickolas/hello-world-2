@@ -1,13 +1,13 @@
-import { StyleSheet, View, Text, KeyboardAvoidingView, Platform  } from 'react-native';
+import { StyleSheet, View, Text, KeyboardAvoidingView, Platform } from 'react-native';
 import { useEffect, useState } from 'react';
 import { GiftedChat, InputToolbar, Bubble } from "react-native-gifted-chat";
 import { collection, getDocs, addDoc, onSnapshot, query, where, orderBy } from "firebase/firestore";
 
-const Chat = ({ route, navigation }) => {
+const Chat = ({ route, navigation, isConnected }) => {
 
-  const { db, name = "User", color = "white", userID = null } = route?.params || {};
+  const { db, storage, name = "User", color = "white", userID = null } = route?.params || {};
   const [messages, setMessages] = useState([]);
-  
+
 
   // To keep old messages on screen
   const onSend = async (newMessages = []) => {
@@ -22,6 +22,47 @@ const Chat = ({ route, navigation }) => {
     }
   };
 
+  let unsubMessages;
+
+  useEffect(() => {
+
+    if (isConnected === true) {
+
+      // unregister current onSnapshot() listener to avoid registering multiple listeners when
+      // useEffect code is re-executed.
+      if (unsubMessages) unsubMessages();
+      unsubMessages = null;
+
+      const q = query(collection(db, "messages"), orderBy("createdAt", "desc"), where("uid", "==", userID));
+      unsubMessages = onSnapshot(q, (documentsSnapshot) => {
+        let newMessages = [];
+        documentsSnapshot.forEach(doc => {
+          newMessages.push({ id: doc.id, ...doc.data(), createdAt: new Date(doc.data().createdAt.toMillis()) })
+        });
+        cacheMessages(newMessages);
+        setMessages(newMessages);
+      });
+    } else loadCachedMessages();
+
+    // Clean up code
+    return () => {
+      if (unsubMessages) unsubMessages();
+    }
+  }, [isConnected]);
+
+  const cacheMessages = async (messagesToCache) => {
+    try {
+      await AsyncStorage.setItem('messages', JSON.stringify(messagesToCache));
+    } catch (error) {
+      console.log(error.message);
+    }
+  }
+
+  const loadCachedMessages = async () => {
+    const cachedMessages = await AsyncStorage.getItem("messages") || [];
+    setMessages(JSON.parse(cachedMessages));
+  }
+
   // To customize the message bubbles
   const renderBubble = (props) => {
     return <Bubble
@@ -29,9 +70,9 @@ const Chat = ({ route, navigation }) => {
       wrapperStyle={{
         right: {
           backgroundColor: "royalblue",
-          paddingVertical: 8, 
+          paddingVertical: 8,
           paddingHorizontal: 10,
-          maxWidth: '100%', 
+          maxWidth: '100%',
           minWidth: '10%',
         },
         left: {
@@ -45,6 +86,11 @@ const Chat = ({ route, navigation }) => {
     />
   }
 
+  const renderInputToolbar = (props) => {
+    if (isConnected) return <InputToolbar {...props} />;
+    else return null;
+  }
+
   // To have the user's name at the top of the Chat screen
   useEffect(() => {
     if (navigation?.setOptions && name) {
@@ -53,7 +99,7 @@ const Chat = ({ route, navigation }) => {
   }, [navigation, name]);
 
 
-// id: 2 is for system messages
+  // id: 2 is for system messages
   useEffect(() => {
     navigation.setOptions({ title: name });
     const q = query(collection(db, "messages"), orderBy("createdAt", "desc"));
@@ -72,27 +118,28 @@ const Chat = ({ route, navigation }) => {
     }
   }, [userID]);
 
- return (
-  <View style={[styles.container, { backgroundColor: color || 'white' }]}> 
-      
-        <GiftedChat
-          messages={messages}
-          renderBubble={renderBubble}
-          onSend={messages => onSend(messages)}
-          user={{
-            _id: userID,
-            name: name,
-          }} 
-        /> 
-        {Platform.OS === "ios"?<KeyboardAvoidingView behavior="padding" />: null}
+  return (
+    <View style={[styles.container, { backgroundColor: color || 'white' }]}>
+
+      <GiftedChat
+        messages={messages}
+        renderBubble={renderBubble}
+        renderInputToolbar={renderInputToolbar}
+        onSend={messages => onSend(messages)}
+        user={{
+          _id: userID,
+          name: name,
+        }}
+      />
+      {Platform.OS === "ios" ? <KeyboardAvoidingView behavior="padding" /> : null}
     </View>
- );
+  );
 }
 
 const styles = StyleSheet.create({
- container: {
-   flex: 1,
- }, 
+  container: {
+    flex: 1,
+  },
 });
 
 export default Chat;
