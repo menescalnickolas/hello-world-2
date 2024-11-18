@@ -43,7 +43,7 @@ export default function App() {
   // Initialize Cloud Firestore and get a reference to the service
   const db = getFirestore(app);
 
-  const storage = getStorage(app);
+  
 
   return (
     <NavigationContainer>
@@ -57,14 +57,7 @@ export default function App() {
         <Stack.Screen
           name="Chat"
         >
-          {props => (
-            <Chat
-              isConnected={connectionStatus.isConnected}
-              db={db}
-              storage={storage}
-              {...props}
-            />
-          )}
+          {props => <Chat isConnected={connectionStatus.isConnected} db={db} {...props}/>}
         </Stack.Screen>
       </Stack.Navigator>
     </NavigationContainer>
