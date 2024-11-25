@@ -1,5 +1,5 @@
 import { TouchableOpacity } from "react-native";
-import { Text, View, StyleSheet } from "react-native-svg";
+import { Text, View, StyleSheet } from "react-native";
 
 import { useActionSheet } from '@expo/react-native-action-sheet'
 
