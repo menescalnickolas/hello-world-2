@@ -9,29 +9,63 @@ import MapView from 'react-native-maps';
 import * as ImagePicker from 'expo-image-picker';
 
 const CustomActions = ({ wrapperStyle, iconTextStyle, onSend}) => {
-  const actionSheet = useActionSheet();
+  const { showActionSheetWithOptions } = useActionSheet();
 
-  const options = ['Choose From Library', 'Take Picture', 'Send Location', 'Cancel'];
-  const cancelButtonIndex = options.length - 1;
-  actionSheet.showActionSheetWithOptions(
-    {
-      options,
-      cancelButtonIndex,
-    },
-    async (buttonIndex) => {
-      switch (buttonIndex) {
-        case 0:
-          console.log('user wants to pick an image');
-          return;
-        case 1:
-          console.log('user wants to take a photo');
-          return;
-        case 2:
-          console.log('user wants to get their location');
-        default:
+  const handleActionPress = () => {
+    const options = ['Choose From Library', 'Take Picture', 'Send Location', 'Cancel'];
+    const cancelButtonIndex = options.length - 1;
+
+    showActionSheetWithOptions(
+      {
+        options,
+        cancelButtonIndex,
+      },
+      async (buttonIndex) => {
+        switch (buttonIndex) {
+          case 0:
+            pickImage();
+            break;
+          case 1:
+            takePhoto();
+            break;
+          case 2:
+            getLocation();
+            break;
+          default:
+            break;
+        }
       }
-    },
-  );
+    );
+  };
+
+  const pickImage = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status === 'granted') {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      });
+
+      if (!result.canceled) {
+        onSend({ image: result.assets[0].uri }); //Send image as message
+      }
+    } else {
+      Alert.alert('Permission to access media library is required!');
+    }
+  };
+
+  const takePhoto = async () => {
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    if (status === 'granted') {
+      const result = await ImagePicker.launchCameraAsync();
+
+      if (!result.canceled) {
+        onSend({ image: result.assets[0].uri }); //Send photo as message
+      }
+    } else {
+      Alert.alert('Permission to access camera is required!');
+    }
+  };
+
   const getLocation = async () => {
     let permissions = await Location.requestForegroundPermissionsAsync();
     if (permissions?.granted) {
@@ -42,7 +76,7 @@ const CustomActions = ({ wrapperStyle, iconTextStyle, onSend}) => {
             longitude: location.coords.longitude,
             latitude: location.coords.latitude,
           },
-        });
+        }); //Send location as message 
       } else Alert.alert("Error occurred while fetching location");
     } else Alert.alert("Permissions haven't been granted.");
   }
@@ -51,7 +85,7 @@ const CustomActions = ({ wrapperStyle, iconTextStyle, onSend}) => {
 
 
   return (
-    <TouchableOpacity style={styles.container}>
+    <TouchableOpacity style={styles.container} onPress={handleActionPress}>
       <View style={[styles.wrapper, wrapperStyle]}>
         <Text style={[styles.iconText, iconTextStyle]}>+</Text>
       </View>
