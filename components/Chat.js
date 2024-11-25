@@ -122,9 +122,20 @@ const Chat = ({ route, navigation, isConnected, db }) => {
 
 
 // To pick image and get location
-  const renderCustomActions = (props) => {
-    return <CustomActions {...props} />;
-  };
+const renderCustomActions = (props) => {
+  return <CustomActions {...props} onSend={(customMessage) => {
+    const newMessage = {
+      _id: Math.random().toString(36).substring(7), // Unique ID for GiftedChat
+      createdAt: new Date(),
+      user: {
+        _id: userID,
+        name: name,
+      },
+      ...customMessage, // Merge custom message (image or location)
+    };
+    onSend([newMessage]); // Use the same onSend logic to handle the message
+  }} />;
+};
 
 // To show location in chat bubble
   const renderCustomView = (props) => {
