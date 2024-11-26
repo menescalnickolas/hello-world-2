@@ -4,9 +4,11 @@ import { GiftedChat, InputToolbar, Bubble } from "react-native-gifted-chat";
 import { collection, getDocs, addDoc, onSnapshot, query, where, orderBy } from "firebase/firestore";
 import CustomActions from './CustomActions.js';
 import MapView from 'react-native-maps';
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 
-const Chat = ({ route, navigation, isConnected, db }) => {
+
+const Chat = ({ route, navigation, isConnected, db, storage }) => {
 
   const { name = "User", color = "white", userID = null } = route?.params || {};
   const [messages, setMessages] = useState([]);
@@ -124,7 +126,7 @@ const Chat = ({ route, navigation, isConnected, db }) => {
 
 // To pick image and get location (There's an issue here)
 const renderCustomActions = (props) => {
-  return <CustomActions userID={userID}  storage={storage} {...props} onSend={(newMessages => {
+  return <CustomActions userID={userID}  storage={storage} onSend={(newMessages => {
     onSend([{
       ...newMessages,
       _id: uuidv4(),
