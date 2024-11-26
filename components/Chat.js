@@ -5,6 +5,7 @@ import { collection, getDocs, addDoc, onSnapshot, query, where, orderBy } from "
 import CustomActions from './CustomActions.js';
 import MapView from 'react-native-maps';
 
+
 const Chat = ({ route, navigation, isConnected, db }) => {
 
   const { name = "User", color = "white", userID = null } = route?.params || {};
@@ -121,20 +122,19 @@ const Chat = ({ route, navigation, isConnected, db }) => {
 
 
 
-// To pick image and get location
+// To pick image and get location (There's an issue here)
 const renderCustomActions = (props) => {
-  return <CustomActions {...props} onSend={(customMessage) => {
-    const newMessage = {
-      _id: Math.random().toString(36).substring(7), // Unique ID for GiftedChat
-      createdAt: new Date(),
+  return <CustomActions userID={userID}  storage={storage} {...props} onSend={(newMessages => {
+    onSend([{
+      ...newMessages,
+      _id: uuidv4(),
+      createdAt: new Date (),
       user: {
         _id: userID,
-        name: name,
-      },
-      ...customMessage, // Merge custom message (image or location)
-    };
-    onSend([newMessage]); // Use the same onSend logic to handle the message
-  }} />;
+        name: name
+      }
+  }])
+  })} {...props}/>;
 };
 
 // To show location in chat bubble

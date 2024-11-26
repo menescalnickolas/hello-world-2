@@ -8,7 +8,9 @@ import MapView from 'react-native-maps';
 
 import * as ImagePicker from 'expo-image-picker';
 
-const CustomActions = ({ wrapperStyle, iconTextStyle, onSend}) => {
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+
+const CustomActions = ({ wrapperStyle, iconTextStyle, onSend, storage, userID }) => {
   const { showActionSheetWithOptions } = useActionSheet();
 
   const handleActionPress = () => {
@@ -38,16 +40,31 @@ const CustomActions = ({ wrapperStyle, iconTextStyle, onSend}) => {
     );
   };
 
+  const generateReference = (uri) => {
+    const timeStamp = (new Date()).getTime();
+    const imageName = uri.split("/")[uri.split("/").length - 1];
+    return `${userID}-${timeStamp}-${imageName}`;
+  }
+
+  //To convert image to blob so it can be stored in Firebase
+  const uploadAndSendImage = async (imageURI) => {
+    const uniqueRefString = generateReference(imageURI);
+    const newUploadRef = ref(storage, uniqueRefString);
+    const response = await fetch(imageURI);
+    const blob = await response.blob();
+    uploadBytes(newUploadRef, blob).then(async (snapshot) => {
+      const imageURL = await getDownloadURL(snapshot.ref)
+      onSend({ image: imageURL })
+    });
+  }
+
+
   const pickImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status === 'granted') {
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      });
+      const result = await ImagePicker.launchImageLibraryAsync();
 
-      if (!result.canceled) {
-        onSend({ image: result.assets[0].uri }); //Send image as message
-      }
+      if (!result.canceled) await uploadAndSendImage(result.assets[0].uri);
     } else {
       Alert.alert('Permission to access media library is required!');
     }
@@ -58,9 +75,7 @@ const CustomActions = ({ wrapperStyle, iconTextStyle, onSend}) => {
     if (status === 'granted') {
       const result = await ImagePicker.launchCameraAsync();
 
-      if (!result.canceled) {
-        onSend({ image: result.assets[0].uri }); //Send photo as message
-      }
+      if (!result.canceled) await uploadAndSendImage(result.assets[0].uri);
     } else {
       Alert.alert('Permission to access camera is required!');
     }
