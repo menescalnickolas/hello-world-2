@@ -5,7 +5,7 @@ import { collection, getDocs, addDoc, onSnapshot, query, where, orderBy } from "
 import CustomActions from './CustomActions.js';
 import MapView from 'react-native-maps';
 import AsyncStorage from "@react-native-async-storage/async-storage";
-
+import { Image } from 'react-native-svg';
 
 
 const Chat = ({ route, navigation, isConnected, db, storage }) => {
@@ -15,16 +15,11 @@ const Chat = ({ route, navigation, isConnected, db, storage }) => {
 
 
   // To keep old messages on screen
-  const onSend = async (newMessages = []) => {
-    try {
-      await addDoc(collection(db, "messages"), {
-        ...newMessages[0],
-        createdAt: new Date(),
-      });
-      console.log("Message sent:", newMessages[0]); // Log to check if message is saved
-    } catch (error) {
-      console.error("Error sending message:", error);
-    }
+  const onSend = (newMessages) => {
+    const message = Array.isArray(newMessages) ? newMessages[0] : newMessages;
+    console.log("Message sent:", newMessages[0]);
+    addDoc(collection(db, "messages"), message); // Ensure message is saved correctly
+    setMessages(previousMessages => GiftedChat.append(previousMessages, newMessages));
   };
 
   let unsubMessages;
@@ -126,40 +121,34 @@ const Chat = ({ route, navigation, isConnected, db, storage }) => {
 
 // To pick image and get location (There's an issue here)
 const renderCustomActions = (props) => {
-  return <CustomActions userID={userID}  storage={storage} onSend={(newMessages => {
-    onSend([{
-      ...newMessages,
-      _id: uuidv4(),
-      createdAt: new Date (),
-      user: {
-        _id: userID,
-        name: name
-      }
-  }])
-  })} {...props}/>;
+  return <CustomActions storage={storage} onSend={onSend} {...props} />;
 };
 
 // To show location in chat bubble
-  const renderCustomView = (props) => {
-    const { currentMessage} = props;
-    if (currentMessage.location) {
-      return (
-          <MapView
-            style={{width: 150,
-              height: 100,
-              borderRadius: 13,
-              margin: 3}}
-            region={{
-              latitude: currentMessage.location.latitude,
-              longitude: currentMessage.location.longitude,
-              latitudeDelta: 0.0922,
-              longitudeDelta: 0.0421,
-            }}
-          />
-      );
-    }
-    return null;
+const renderCustomView = (props) => {
+  const { currentMessage } = props;
+  if (currentMessage.location) {
+    return (
+      <MapView
+        style={{ width: 150, height: 100, borderRadius: 13, margin: 3 }}
+        region={{
+          latitude: currentMessage.location.latitude,
+          longitude: currentMessage.location.longitude,
+          latitudeDelta: 0.0922,
+          longitudeDelta: 0.0421,
+        }}
+      />
+    );
+  } else if (currentMessage.image) {
+    return (
+      <Image
+        source={{ uri: currentMessage.image }}
+        style={{ width: 150, height: 100, borderRadius: 13, margin: 3 }}
+      />
+    );
   }
+  return null;
+};
 
   return (
     <View style={[styles.container, { backgroundColor: color || 'white' }]}>
