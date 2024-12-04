@@ -5,7 +5,7 @@ import { collection, getDocs, addDoc, onSnapshot, query, where, orderBy } from "
 import CustomActions from './CustomActions.js';
 import MapView from 'react-native-maps';
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { Image } from 'react-native-svg';
+import { Image } from 'react-native';
 
 
 const Chat = ({ route, navigation, isConnected, db, storage }) => {
@@ -119,7 +119,7 @@ const Chat = ({ route, navigation, isConnected, db, storage }) => {
 
 
 
-// To pick image and get location (There's an issue here)
+// To pick image and get location
 const renderCustomActions = (props) => {
   return <CustomActions storage={storage} onSend={onSend} {...props} />;
 };
