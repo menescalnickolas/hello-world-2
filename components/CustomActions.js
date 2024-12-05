@@ -1,270 +1,155 @@
-
-
-import { TouchableOpacity } from "react-native";
-import { Text, View, StyleSheet } from "react-native";
-
-import { useActionSheet } from '@expo/react-native-action-sheet'
-
+import { TouchableOpacity, Text, View, StyleSheet, Alert } from 'react-native';
+import { useActionSheet } from '@expo/react-native-action-sheet';
+import * as ImagePicker from 'expo-image-picker'; 
 import * as Location from 'expo-location';
-import * as ImagePicker from 'expo-image-picker';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { Timestamp } from 'firebase/firestore';
 
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+const CustomActions = ({
+    wrapperStyle,
+    iconTextStyle,
+    onSend,
+    storage,
+    userID
+}) => {
+    const actionSheet = useActionSheet();
 
-const CustomActions = ({ wrapperStyle, iconTextStyle, onSend, storage, userID }) => {
-  const { showActionSheetWithOptions } = useActionSheet();
+    const onActionPress = () => {
+        // Defines array of strings to display in the ActionSheet
+        const options = [
+            'Choose From Library',
+            'Take Picture',
+            'Send Location',
+            'Cancel'
+        ];
+        // Displays cancel button
+        const cancelButtonIndex = options.length - 1;
+        actionSheet.showActionSheetWithOptions(
+            {
+                options,
+                cancelButtonIndex
+            },
+            async (buttonIndex) => {
+                switch (buttonIndex) {
+                    case 0:
+                        pickImage();
+                        return;
+                    case 1:
+                        takePhoto();
+                        return;
+                    case 2:
+                        getLocation();
+                    default:
+                }
+            }
+        );
+    };
 
-  const handleActionPress = () => {
-    const options = ['Choose From Library', 'Take Picture', 'Send Location', 'Cancel'];
-    const cancelButtonIndex = options.length - 1;
+    // Generates unique reference for image based on user ID, current timestamp and image name
+    const generateReference = (uri) => {
+        const timeStamp = new Date().getTime();
+        const imageName = uri.split('/')[uri.split('/').length - 1];
+        return `${userID}-${timeStamp}-${imageName}`;
+    };
 
-    showActionSheetWithOptions(
-      {
-        options,
-        cancelButtonIndex,
-      },
-      async (buttonIndex) => {
-        switch (buttonIndex) {
-          case 0:
-            pickImage();
-            break;
-          case 1:
-            takePhoto();
-            break;
-          case 2:
-            getLocation();
-            break;
-          default:
-            break;
+     //To convert image to blob so it can be stored in Firebase
+    const uploadAndSendImage = async (imageURI) => {
+        const uniqueRefString = generateReference(imageURI);
+        const newUploadRef = ref(storage, uniqueRefString);
+        const response = await fetch(imageURI);
+        const blob = await response.blob();
+        uploadBytes(newUploadRef, blob).then(async (snapshot) => {
+            const imageURL = await getDownloadURL(snapshot.ref);
+            onSend([
+                {
+                    createdAt: Timestamp.now(),
+                    user: {
+                        _id: userID
+                    },
+                    image: imageURL
+                }
+            ]);
+        });
+    };
+
+    const pickImage = async () => {
+        let permissions = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (permissions?.granted) {
+            let result = await ImagePicker.launchImageLibraryAsync();
+            if (!result.canceled) await uploadAndSendImage(result.assets[0].uri);
+            else Alert.alert("Permissions haven't been granted.");
         }
-      }
-    );
-  };
+    };
 
-  const generateReference = (uri) => {
-    const timeStamp = (new Date()).getTime();
-    const imageName = uri.split("/")[uri.split("/").length - 1];
-    return `${userID}-${timeStamp}-${imageName}`;
-  }
-
-  //To convert image to blob so it can be stored in Firebase
-  const uploadAndSendImage = async (imageURI) => {
-    const uniqueRefString = generateReference(imageURI);
-    const newUploadRef = ref(storage, uniqueRefString);
-    const response = await fetch(imageURI);
-    const blob = await response.blob();
-    uploadBytes(newUploadRef, blob).then(async (snapshot) => {
-      const imageURL = await getDownloadURL(snapshot.ref)
-      onSend({ image: imageURL })
-    });
-  }
-
-
-  const pickImage = async () => {
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status === 'granted') {
-      const result = await ImagePicker.launchImageLibraryAsync();
-
-      if (!result.canceled) await uploadAndSendImage(result.assets[0].uri);
-    } else {
-      Alert.alert('Permission to access media library is required!');
-    }
-  };
-
-  const takePhoto = async () => {
-    const { status } = await ImagePicker.requestCameraPermissionsAsync();
-    if (status === 'granted') {
-      const result = await ImagePicker.launchCameraAsync();
-
-      if (!result.canceled) await uploadAndSendImage(result.assets[0].uri);
-    } else {
-      Alert.alert('Permission to access camera is required!');
-    }
-  };
-
-  const getLocation = async () => {
-    let permissions = await Location.requestForegroundPermissionsAsync();
-    if (permissions?.granted) {
-      const location = await Location.getCurrentPositionAsync({});
-      if (location) {
-        onSend({
-          location: {
-            longitude: location.coords.longitude,
-            latitude: location.coords.latitude,
-          },
-        }); //Send location as message 
-      } else Alert.alert("Error occurred while fetching location");
-    } else Alert.alert("Permissions haven't been granted.");
-  }
+   
+    const takePhoto = async () => {
+        let permissions = await ImagePicker.requestCameraPermissionsAsync();
+        if (permissions?.granted) {
+            let result = await ImagePicker.launchCameraAsync();
+            if (!result.canceled) await uploadAndSendImage(result.assets[0].uri);
+            else Alert.alert("Permissions haven't been granted.");
+        }
+    };
 
   
+    const getLocation = async () => {
+        let permissions = await Location.requestForegroundPermissionsAsync();
+        if (permissions?.granted) {
+            const location = await Location.getCurrentPositionAsync({});
+            if (location) {
+              //Send location as message 
+                onSend([
+                    {
+                        createdAt: Timestamp.now(),
+                        user: {
+                            _id: userID
+                        },
+                        location: {
+                            longitude: location.coords.longitude,
+                            latitude: location.coords.latitude
+                        }
+                    }
+                ]);
+            } else Alert.alert('Error occurred while fetching location');
+        } else Alert.alert("Permissions haven't been granted.");
+    };
 
-
-  return (
-    <TouchableOpacity style={styles.container} onPress={handleActionPress}>
-      <View style={[styles.wrapper, wrapperStyle]}>
-        <Text style={[styles.iconText, iconTextStyle]}>+</Text>
-      </View>
-    </TouchableOpacity>
-  )
+    return (
+        <TouchableOpacity
+            accessible={true}
+            accessibilityLabel="Select optional actions"
+            accessibilityHint="Choose to send an image or your location."
+            accessibilityRole="button"
+            style={styles.container}
+            onPress={onActionPress}
+        >
+            <View style={[styles.wrapper, wrapperStyle]}>
+                <Text style={[styles.iconText, iconTextStyle]}>+</Text>
+            </View>
+        </TouchableOpacity>
+    );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    width: 26,
-    height: 26,
-    marginLeft: 10,
-    marginBottom: 10,
-  },
-  wrapper: {
-    borderRadius: 13,
-    borderColor: '#b2b2b2',
-    borderWidth: 2,
-    flex: 1,
-  },
-  iconText: {
-    color: '#b2b2b2',
-    fontWeight: 'bold',
-    fontSize: 10,
-    backgroundColor: 'transparent',
-    textAlign: 'center',
-  },
+    container: {
+        width: 26,
+        height: 26,
+        marginLeft: 10,
+        marginBottom: 10
+    },
+    wrapper: {
+        borderRadius: 13,
+        borderColor: '#b2b2b2',
+        borderWidth: 2,
+        flex: 1
+    },
+    iconText: {
+        color: '#b2b2b2',
+        fontWeight: 'bold',
+        fontSize: 16,
+        backgroundColor: 'transparent',
+        textAlign: 'center'
+    }
 });
 
 export default CustomActions;
-
-
-/*
-import { Alert, StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { useActionSheet } from '@expo/react-native-action-sheet';
-import * as ImagePicker from 'expo-image-picker';
-//import { useState } from 'react';
-import * as Location from 'expo-location';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-
-const CustomActions = ({ wrapperStyle, iconTextStyle, onSend, storage, userID }) => {
-  const actionSheet = useActionSheet();
-
-  const onActionPress = () => {
-    const options = ['Choose From Library', 'Take Picture', 'Send Location', 'Cancel'];
-    const cancelButtonIndex = options.length - 1;
-    actionSheet.showActionSheetWithOptions(
-      {
-        options,
-        cancelButtonIndex,
-      },
-      async (buttonIndex) => {
-        switch (buttonIndex) {
-          case 0:
-            pickImage();
-            return;
-          case 1:
-            takePhoto();
-            return;
-          case 2:
-            getLocation();
-          default:
-        }
-      },
-    );
-  };
-
-  const generateReference = (uri) => {
-    const timeStamp = (new Date()).getTime();
-    const imageName = uri.split("/")[uri.split("/").length - 1];
-    return `${userID}-${timeStamp}-${imageName}`;
-  }
-
-  const uploadAndSendImage = async (imageURI) => {
-    const uniqueRefString = generateReference(imageURI);
-    const newUploadRef = ref(storage, uniqueRefString);
-    const response = await fetch(imageURI);
-    const blob = await response.blob();
-    uploadBytes(newUploadRef, blob).then(async (snapshot) => {
-      const imageURL = await getDownloadURL(snapshot.ref);
-      onSend({
-        _id: Date.now(),
-        createdAt: new Date(),
-        user: { _id: userID },
-        image: imageURL,
-      });
-    });
-  };
-
-  const pickImage = async () => {
-    let permissions = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (permissions?.granted) {
-      let result = await ImagePicker.launchImageLibraryAsync();
-      if (!result.canceled) await uploadAndSendImage(result.assets[0].uri);
-    } else Alert.alert("Permissions haven't been granted.");
-  }
-
-
-  const takePhoto = async () => {
-    let permissions = await ImagePicker.getCameraPermissionsAsync();
-    if (!permissions?.granted) permissions = await ImagePicker.requestCameraPermissionsAsync();
-    if (permissions?.granted) {
-      let result = await ImagePicker.launchCameraAsync();
-      if (!result.canceled) await uploadAndSendImage(result.assets[0].uri);
-    } else Alert.alert("Permissions haven't been granted.");
-  };
-
-  const getLocation = async () => {
-    let permissions = await Location.requestForegroundPermissionsAsync();
-  
-    if (permissions?.granted) {
-      const location = await Location.getCurrentPositionAsync({});
-      if (location) {
-        onSend({
-          _id: Date.now(),
-          createdAt: new Date(),
-          user: { _id: userID },
-          location: {
-            longitude: location.coords.longitude,
-            latitude: location.coords.latitude,
-          },
-        });
-      } else Alert.alert("Error occurred while fetching location");
-    } else Alert.alert("Permissions haven't been granted.");
-  };
-
-  return (
-    <TouchableOpacity
-      accessible={true}
-      accessibilityLabel="More options"
-      accessibilityHint="Let’s you choose to an image from library, take a picture or send your location."
-      accessibilityRole="button"
-      style={styles.container}
-      onPress={onActionPress}>
-      <View style={[styles.wrapper, wrapperStyle]}>
-        <Text style={[styles.iconText, iconTextStyle]}>+</Text>
-      </View>
-    </TouchableOpacity>
-  );
-
-}
-
-const styles = StyleSheet.create({
-  container: {
-    width: 26,
-    height: 26,
-    marginLeft: 10,
-    marginBottom: 10,
-  },
-  wrapper: {
-    borderRadius: 13,
-    borderColor: '#b2b2b2',
-    borderWidth: 2,
-    flex: 1,
-  },
-  iconText: {
-    color: '#b2b2b2',
-    fontWeight: 'bold',
-    fontSize: 10,
-    backgroundColor: 'transparent',
-    textAlign: 'center',
-  },
-});
-
-export default CustomActions;
-
-*/
