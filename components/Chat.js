@@ -160,13 +160,7 @@ const Chat = ({ db, storage, route, navigation, isConnected }) => {
         }}
       />
 
-      {Platform.OS === 'android' ? (
-        <KeyboardAvoidingView behavior="height" />
-      ) : null}
-
-      {Platform.OS === 'ios' ? (
-        <KeyboardAvoidingView behavior="padding" />
-      ) : null}
+      
     </View>
   );
 };
